@@ -1,0 +1,558 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Whence</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="Whence is a free Chrome extension for developers. Hover any value on a web page to see the API request, JSON field and list item it came from, and see which requests a click actually made.">
+<link rel="icon" type="image/png" href="img/icon-32.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: one 1120px column. The hero puts the claim beside a working demo of
+   the trace (value → item → field); everything below explains it in the
+   product's own terms. Graphite neutrals, copper as the only accent, red for
+   nothing. The trace panel is always dark, like the real tooltip. */
+:root {
+  --bg: #f6f6f4;
+  --surface: #ffffff;
+  --sunk: #ecece9;
+  --ink: #1c1d1f;
+  --muted: #5f6267;
+  --line: #deded9;
+  --copper: #9a5a1a;
+  --copper-soft: #f3e3cf;
+  --on-copper: #fffaf2;
+  /* the trace panel: always dark, in both themes */
+  --mask: #17191c;
+  --mask-2: #1e2125;
+  --silk: #ecebe7;
+  --silk-muted: #a2a3a6;
+  --tip-line: #2e3237;
+  --pad: #e0a04f;
+  --display: "IBM Plex Sans Condensed", "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  --sans: "IBM Plex Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SF Mono", "Cascadia Code", Consolas, monospace;
+  --step--1: 0.8125rem;
+  --step-0: 1rem;
+  --step-1: 1.1875rem;
+  --step-2: 1.5rem;
+  --step-3: clamp(1.75rem, 3.2vw, 2.25rem);
+  --step-4: clamp(2.4rem, 5.4vw, 3.9rem);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #111315; --surface: #17191c; --sunk: #1d2024; --ink: #ecebe7; --muted: #a2a3a6; --line: #2a2e33;
+    --copper: #e0a04f; --copper-soft: #3a2a17; --on-copper: #1b1206; --tip-line: #33373d;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #111315; --surface: #17191c; --sunk: #1d2024; --ink: #ecebe7; --muted: #a2a3a6; --line: #2a2e33;
+  --copper: #e0a04f; --copper-soft: #3a2a17; --on-copper: #1b1206; --tip-line: #33373d;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } * { transition: none !important; } }
+body {
+  margin: 0; background: var(--bg); color: var(--ink);
+  font: 400 var(--step-0)/1.6 var(--sans); -webkit-font-smoothing: antialiased;
+}
+img { max-width: 100%; height: auto; display: block; }
+a { color: var(--copper); text-underline-offset: 3px; }
+a:focus-visible, button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--copper); outline-offset: 2px; border-radius: 4px; }
+code, .mono { font-family: var(--mono); font-size: 0.92em; }
+h1, h2, h3 { text-wrap: balance; margin: 0; }
+p { margin: 0; }
+
+.wrap { max-width: 1120px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+
+/* ---- header ---- */
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
+header.site { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: color-mix(in srgb, var(--bg) 92%, transparent); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); }
+header.site .wrap { display: flex; align-items: center; gap: 24px; padding-block: 12px; }
+.brand { display: flex; align-items: center; gap: 10px; color: var(--ink); text-decoration: none; font: 600 1.15rem/1 var(--display); letter-spacing: 0.01em; }
+.brand svg { width: 28px; height: 28px; flex: none; }
+nav.links { display: flex; gap: 20px; margin-left: auto; font-size: var(--step--1); }
+nav.links a { color: var(--muted); text-decoration: none; }
+nav.links a:hover { color: var(--ink); }
+.btn { display: inline-flex; align-items: center; gap: 8px; font: 500 0.9375rem/1 var(--sans); padding: 11px 16px; border-radius: 8px; text-decoration: none; border: 1px solid var(--line); color: var(--ink); background: var(--surface); }
+.btn.primary { background: var(--copper); border-color: var(--copper); color: var(--on-copper); }
+.btn.primary:hover { background: color-mix(in srgb, var(--copper) 86%, var(--ink)); }
+.btn.small { padding: 8px 12px; font-size: var(--step--1); }
+@media (max-width: 640px) { nav.links { display: none; } header.site .btn { margin-left: auto; } }
+
+/* ---- hero ---- */
+.hero .wrap { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 48px; align-items: start; padding-block: 64px 72px; }
+.hero h1 { font: 600 var(--step-4)/1.02 var(--display); letter-spacing: -0.015em; }
+.hero h1 .where { color: var(--copper); display: block; }
+.hero .lede { margin-top: 20px; font-size: var(--step-1); color: var(--muted); max-width: 34ch; line-height: 1.5; }
+.hero .cta { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-top: 28px; }
+.hero .fine { margin-top: 14px; font-size: var(--step--1); color: var(--muted); }
+@media (max-width: 900px) { .hero .wrap { grid-template-columns: minmax(0, 1fr); gap: 36px; padding-block: 40px 48px; } }
+
+/* ---- the demo: a small app, its trace, and the response behind it ---- */
+.demo { display: grid; gap: 14px; min-width: 0; }
+.demo-hint { font: 500 0.75rem/1 var(--sans); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); display: flex; align-items: center; gap: 8px; }
+.demo-hint::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--copper); }
+.app { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.app-head { display: flex; justify-content: space-between; align-items: baseline; padding: 12px 16px; border-bottom: 1px solid var(--line); }
+.app-head strong { font: 600 0.95rem/1.2 var(--sans); }
+.app-head span { font-size: var(--step--1); color: var(--muted); font-variant-numeric: tabular-nums; }
+.table-scroll { overflow-x: auto; }
+table.demo-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; font-variant-numeric: tabular-nums; }
+table.demo-table th { text-align: left; font: 500 0.75rem/1.2 var(--sans); color: var(--muted); padding: 9px 16px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+table.demo-table td { padding: 6px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+table.demo-table tr:last-child td { border-bottom: 0; }
+.cell { display: inline-block; padding: 3px 6px; border-radius: 4px; cursor: default; outline: 1.5px solid transparent; outline-offset: 0; transition: outline-color .12s, background .12s; }
+.cell:hover, .cell.on { outline-color: var(--copper); background: color-mix(in srgb, var(--copper) 10%, transparent); }
+.score { font-family: var(--mono); font-size: 0.85rem; }
+
+.below { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; align-items: start; }
+@media (max-width: 640px) { .below { grid-template-columns: minmax(0, 1fr); } }
+
+/* the trace: same drawing as the real tooltip */
+.trace { background: var(--mask); color: var(--silk); border: 1px solid var(--tip-line); border-radius: 10px; padding: 12px 14px 14px; font-size: 0.8125rem; line-height: 1.45; min-width: 0; }
+.trace .el { font: 400 0.72rem/1 var(--mono); color: var(--silk-muted); padding-bottom: 10px; margin-bottom: 12px; border-bottom: 1px solid var(--tip-line); }
+.trace .el b { color: var(--silk); font-weight: 500; }
+.node { position: relative; padding: 0 0 12px 22px; min-width: 0; }
+.node:last-child { padding-bottom: 0; }
+.node::before { content: ""; position: absolute; left: 0; top: 3px; width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--pad); background: var(--mask); z-index: 1; }
+.node:not(:last-child)::after { content: ""; position: absolute; left: 5px; top: 13px; bottom: -3px; width: 2px; background: var(--pad); }
+.node.item::before { border-radius: 2px; }
+.node.field::before { background: var(--pad); box-shadow: 0 0 0 3px color-mix(in srgb, var(--pad) 25%, transparent); }
+.node .row { display: flex; gap: 8px; align-items: baseline; min-width: 0; }
+.node .method { font: 500 0.72rem/1.4 var(--mono); color: var(--pad); }
+.node .path { font: 400 0.78rem/1.4 var(--mono); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; flex: 1; }
+.node .status { font: 500 0.72rem/1.4 var(--mono); color: var(--silk-muted); }
+.node .key { font: 500 0.8rem/1.4 var(--mono); color: var(--silk); overflow-wrap: anywhere; }
+.node .kind { font-size: 0.72rem; color: var(--silk-muted); white-space: nowrap; }
+.node .meta { font-size: 0.72rem; color: var(--silk-muted); }
+.node .val { margin-top: 5px; padding: 5px 8px; border-radius: 6px; background: var(--mask-2); font: 400 0.78rem/1.4 var(--mono); overflow-wrap: anywhere; }
+.node .why { margin-top: 5px; font-size: 0.75rem; color: var(--silk-muted); }
+.str { margin-left: auto; display: inline-flex; gap: 3px; align-items: center; font-size: 0.72rem; color: var(--silk); white-space: nowrap; }
+.str i { width: 7px; height: 7px; border-radius: 1.5px; border: 1.5px solid var(--pad); }
+.str i.f { background: var(--pad); }
+.str b { font-weight: 500; margin-left: 4px; }
+
+/* the response behind it */
+.json { margin: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; min-width: 0; overflow: hidden; }
+.json .bar { display: flex; gap: 8px; align-items: baseline; padding: 9px 12px; border-bottom: 1px solid var(--line); font: 400 0.72rem/1.3 var(--mono); color: var(--muted); }
+.json .bar b { color: var(--copper); font-weight: 500; }
+.json pre { margin: 0; padding: 10px 0; overflow-x: auto; font: 400 0.72rem/1.65 var(--mono); }
+.json .ln { display: block; padding: 0 12px; white-space: pre; }
+.json .ln.item { background: color-mix(in srgb, var(--copper) 9%, transparent); }
+.json .k { color: var(--muted); }
+.json .hit { color: var(--ink); background: var(--copper-soft); border-radius: 3px; box-shadow: 0 0 0 1.5px var(--copper); }
+
+/* ---- sections ---- */
+section.block { padding-block: 72px; border-top: 1px solid var(--line); }
+.eyebrow { font: 500 0.75rem/1 var(--sans); letter-spacing: 0.09em; text-transform: uppercase; color: var(--copper); }
+.block h2 { margin-top: 12px; font: 600 var(--step-3)/1.1 var(--display); letter-spacing: -0.01em; max-width: 26ch; }
+.block .intro { margin-top: 14px; color: var(--muted); max-width: 62ch; font-size: var(--step-1); line-height: 1.55; }
+
+.answers { display: grid; gap: 56px; margin-top: 48px; }
+.answer { display: grid; grid-template-columns: minmax(0, 4fr) minmax(0, 6fr); gap: 40px; align-items: center; }
+.answer:nth-child(even) .shot { order: -1; }
+.answer h3 { font: 600 var(--step-2)/1.2 var(--display); }
+.answer p { margin-top: 12px; color: var(--muted); max-width: 46ch; }
+.answer ul { margin: 16px 0 0; padding: 0; list-style: none; display: grid; gap: 8px; font-size: 0.9375rem; }
+.answer li { display: grid; grid-template-columns: 14px minmax(0, 1fr); gap: 10px; align-items: baseline; }
+.answer li::before { content: ""; width: 8px; height: 8px; border-radius: 50%; border: 2px solid var(--copper); transform: translateY(1px); }
+.shot { margin: 0; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: var(--sunk); }
+.shot.narrow { max-width: 420px; justify-self: center; width: 100%; }
+.shot figcaption { font-size: var(--step--1); color: var(--muted); padding: 10px 14px; border-top: 1px solid var(--line); background: var(--surface); }
+@media (max-width: 900px) { .answer { grid-template-columns: minmax(0, 1fr); gap: 20px; } .answer:nth-child(even) .shot { order: 0; } }
+
+/* steps: a real sequence */
+.steps { list-style: none; margin: 40px 0 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 32px; counter-reset: step; }
+.steps li { counter-increment: step; display: grid; gap: 8px; align-content: start; }
+.steps li::before { content: counter(step); font: 600 0.85rem/1 var(--mono); color: var(--copper); width: 28px; height: 28px; border: 1.5px solid var(--copper); border-radius: 50%; display: grid; place-items: center; }
+.steps h3 { font: 600 var(--step-1)/1.3 var(--sans); }
+.steps p { color: var(--muted); font-size: 0.9375rem; }
+kbd { font: 500 0.8em/1 var(--mono); padding: 3px 6px; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 5px; background: var(--surface); color: var(--ink); white-space: nowrap; }
+@media (max-width: 760px) { .steps { grid-template-columns: minmax(0, 1fr); gap: 24px; } }
+
+/* shown vs stored */
+.formats-scroll { overflow-x: auto; margin-top: 36px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+table.formats { width: 100%; border-collapse: collapse; font-size: 0.9375rem; min-width: 620px; }
+table.formats th { text-align: left; font: 500 0.75rem/1.2 var(--sans); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); padding: 12px 16px; border-bottom: 1px solid var(--line); }
+table.formats td { padding: 11px 16px; border-bottom: 1px solid var(--line); vertical-align: baseline; }
+table.formats tr:last-child td { border-bottom: 0; }
+table.formats td:nth-child(1) { font-weight: 500; white-space: nowrap; }
+table.formats td:nth-child(2) { font-family: var(--mono); font-size: 0.85rem; color: var(--copper); white-space: nowrap; }
+table.formats td:nth-child(3) { color: var(--muted); }
+
+/* how a call is judged */
+.judges { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; margin-top: 40px; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--surface); }
+.judge { padding: 22px 20px; display: grid; gap: 8px; align-content: start; border-left: 1px solid var(--line); }
+.judge:first-child { border-left: 0; }
+.judge h3 { font: 600 var(--step-1)/1.25 var(--sans); }
+.judge p { color: var(--muted); font-size: 0.9rem; }
+.judge code { color: var(--ink); }
+@media (max-width: 900px) { .judges { grid-template-columns: repeat(2, minmax(0, 1fr)); } .judge:nth-child(3) { border-left: 0; } .judge:nth-child(n+3) { border-top: 1px solid var(--line); } }
+@media (max-width: 520px) { .judges { grid-template-columns: minmax(0, 1fr); } .judge { border-left: 0; } .judge:nth-child(n+2) { border-top: 1px solid var(--line); } }
+
+/* where it works */
+.works { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 36px; margin-top: 40px; }
+.works h3 { font: 600 var(--step-1)/1.3 var(--sans); padding-bottom: 10px; border-bottom: 1px solid var(--line); }
+.works ul { margin: 12px 0 0; padding: 0; list-style: none; display: grid; gap: 7px; color: var(--muted); font-size: 0.9375rem; }
+@media (max-width: 760px) { .works { grid-template-columns: minmax(0, 1fr); gap: 28px; } }
+
+/* privacy band */
+.privacy-band { background: var(--sunk); border-top: 1px solid var(--line); }
+.privacy-band .wrap { padding-block: 64px; display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 40px; }
+.privacy-band h2 { font: 600 var(--step-3)/1.1 var(--display); }
+.privacy-band ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 14px; }
+.privacy-band li { display: grid; gap: 2px; }
+.privacy-band li b { font-weight: 600; }
+.privacy-band li span { color: var(--muted); }
+@media (max-width: 760px) { .privacy-band .wrap { grid-template-columns: minmax(0, 1fr); } }
+
+footer.site { border-top: 1px solid var(--line); }
+footer.site .wrap { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: center; padding-block: 28px; font-size: var(--step--1); color: var(--muted); }
+footer.site nav { display: flex; gap: 20px; margin-left: auto; }
+footer.site a { color: var(--muted); }
+</style>
+</head>
+<body>
+
+<header class="site">
+  <div class="wrap">
+    <a class="brand" href="./" aria-label="Whence home">
+      <svg viewBox="0 0 128 128" aria-hidden="true"><rect x="4.5" y="4.5" width="119" height="119" rx="28" fill="#17191c" stroke="#2e3237" stroke-width="3"/><path d="M30 42 L46 92 L64 57 L82 92 L98 42" fill="none" stroke="#e0a04f" stroke-width="11.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="30" cy="36" r="12.5" fill="#17191c" stroke="#e0a04f" stroke-width="8.5"/><circle cx="98" cy="36" r="14.5" fill="#e0a04f"/></svg>
+      Whence
+    </a>
+    <nav class="links" aria-label="Sections">
+      <a href="#how">How it works</a>
+      <a href="#clicks">Clicks</a>
+      <a href="#formats">Formats</a>
+      <a href="privacy.html">Privacy</a>
+    </nav>
+    <!-- Replace with the listing URL once the extension is published. -->
+    <a class="btn primary small" href="https://chromewebstore.google.com/search/Whence">Add to Chrome</a>
+  </div>
+</header>
+
+<main>
+  <section class="hero">
+    <div class="wrap">
+      <div>
+        <h1>Every value on screen came from somewhere. <span class="where">Whence shows you where.</span></h1>
+        <p class="lede">Hover any number, name or date on a web app and see the API request, the list item and the JSON field it came from. Click a button and see which requests that click made, with analytics and background noise set aside.</p>
+        <div class="cta">
+          <a class="btn primary" href="https://chromewebstore.google.com/search/Whence">Add to Chrome, free</a>
+          <a class="btn" href="#how">See how it works</a>
+        </div>
+        <p class="fine">For Chrome and Chromium browsers. No account, nothing sent anywhere.</p>
+      </div>
+
+      <div class="demo" aria-label="Example: an orders table and where its values came from">
+        <div class="demo-hint" id="demo-hint">Try it: hover a value in the table</div>
+        <div class="app">
+          <div class="app-head"><strong>Orders</strong><span>1,284 total</span></div>
+          <div class="table-scroll">
+            <table class="demo-table">
+              <thead><tr><th>Customer</th><th>Total</th><th>Status</th><th>Placed</th></tr></thead>
+              <tbody id="rows"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="below">
+          <div class="trace" id="trace" aria-live="polite"></div>
+          <div class="json">
+            <div class="bar"><b>GET</b> /api/orders?page=1 <span>· 200</span></div>
+            <pre id="json" tabindex="0" aria-label="The response"></pre>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="how">
+    <div class="wrap">
+      <div class="eyebrow">What it answers</div>
+      <h2>Three questions you ask every time you debug a front end</h2>
+      <p class="intro">Whence watches the requests a page makes and the page itself, then connects the two. It runs on any framework and needs no changes to the app.</p>
+
+      <div class="answers">
+        <div class="answer">
+          <div>
+            <h3>Where did this value come from?</h3>
+            <p>Turn on inspect mode and point at anything. The tooltip draws the path from the request to the item and the field, with the evidence for the match.</p>
+            <ul>
+              <li><span>Exact field paths like <code>data.orders[2].totalCents</code></span></li>
+              <li><span>The right row, even when the same value appears in many rows</span></li>
+              <li><span>Says when it isn't sure, instead of guessing</span></li>
+            </ul>
+          </div>
+          <figure class="shot">
+            <img src="img/hover-trace.png" width="1900" height="1150" alt="Whence's tooltip over an order total of $42.00, tracing it to the GET /api/shop/orders request, item data.orders[2] and field totalCents, stored as 4200 cents.">
+            <figcaption>$42.00 appears in three orders. Whence picks the right one from the values next to it, and knows the API stores it in cents.</figcaption>
+          </figure>
+        </div>
+
+        <div class="answer" id="clicks">
+          <div>
+            <h3>What did that click call?</h3>
+            <p>Every click, submit, search and back/forward lists the requests it caused, in the side panel and in the tooltip of the button you clicked.</p>
+            <ul>
+              <li><span>Follows the click through timers, promises, animations and lazy-loaded code</span></li>
+              <li><span>Finds data that was prefetched on hover, or fetched earlier and only shown now</span></li>
+              <li><span>Marks which responses ended up on screen</span></li>
+            </ul>
+          </div>
+          <figure class="shot narrow">
+            <img src="img/clicks-panel.png" width="800" height="1240" alt="The Clicks view of the side panel: each click with the requests it caused, and a folded list of background calls that happened at the same time.">
+            <figcaption>Analytics, flags and another extension's call are folded under the click, not counted as what it did.</figcaption>
+          </figure>
+        </div>
+
+        <div class="answer">
+          <div>
+            <h3>What exactly did the server send?</h3>
+            <p>The side panel keeps every request on the tab with its headers and bodies. Copy one with its response, as cURL, or export the session as a HAR file.</p>
+            <ul>
+              <li><span>Tokens, cookies and passwords are redacted in copies and exports</span></li>
+              <li><span>Includes requests from iframes and micro-frontends</span></li>
+              <li><span>Background traffic is tagged and hidden until you want it</span></li>
+            </ul>
+          </div>
+          <figure class="shot narrow">
+            <img src="img/requests-panel.png" width="800" height="800" alt="The Requests view of the side panel: a list of API requests with method, path, status, timing and tags such as from click and on screen.">
+            <figcaption>One list per tab, with the click and the screen each request belongs to.</figcaption>
+          </figure>
+        </div>
+      </div>
+
+      <ol class="steps" aria-label="Getting started">
+        <li>
+          <h3>Add it to Chrome</h3>
+          <p>Free, from the Chrome Web Store.</p>
+        </li>
+        <li>
+          <h3>Turn it on for your app</h3>
+          <p>Open the Whence popup and enable the site, or use it on the current tab only with no permission at all.</p>
+        </li>
+        <li>
+          <h3>Hover and click</h3>
+          <p>Press <kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>A</kbd> to inspect, and <kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>K</kbd> for the side panel.</p>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="wrap">
+      <div class="eyebrow">Background traffic</div>
+      <h2>It knows an analytics call from the request that loaded your data</h2>
+      <p class="intro">Every request is judged on four kinds of evidence, so this works on apps Whence has never seen, not from a list of known hosts.</p>
+      <div class="judges">
+        <div class="judge">
+          <h3>Who made it</h3>
+          <p>The script where the call started: your code, an analytics SDK (even self-hosted), or another browser extension.</p>
+        </div>
+        <div class="judge">
+          <h3>Where it goes</h3>
+          <p>Telemetry and feature-flag services, collection paths like <code>/v1/traces</code>, sign-in and translation endpoints.</p>
+        </div>
+        <div class="judge">
+          <h3>What it sends</h3>
+          <p>Event payloads with <code>anonymousId</code> or <code>distinct_id</code>, batches of events, compressed blobs, beacons.</p>
+        </div>
+        <div class="judge">
+          <h3>What started it</h3>
+          <p>A timer set before the click, the window regaining focus, a server push over a WebSocket, steady polling.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="formats">
+    <div class="wrap">
+      <div class="eyebrow">Shown one way, stored another</div>
+      <h2>Apps rarely show a value the way the API sent it</h2>
+      <p class="intro">Whence matches the page's version to the response's, so formatting doesn't hide where a value came from.</p>
+      <div class="formats-scroll">
+        <table class="formats">
+          <thead><tr><th>On the page</th><th>In the response</th><th>Why they match</th></tr></thead>
+          <tbody>
+            <tr><td>48 210,25 $</td><td>48210.25</td><td>Number formats in any locale, currency before or after</td></tr>
+            <tr><td>$19.99</td><td>1999</td><td>An amount stored in cents</td></tr>
+            <tr><td>1.3 GB</td><td>1288490188</td><td>File sizes in bytes, decimal or binary</td></tr>
+            <tr><td>il y a 2 heures</td><td>"2026-10-29T10:58:00Z"</td><td>Relative times and dates in several languages, timestamps in seconds or milliseconds</td></tr>
+            <tr><td>✓</td><td>true</td><td>A label or icon the app maps a value to, learned from the rest of the column</td></tr>
+            <tr><td>In progress</td><td>"IN_PROGRESS"</td><td>Enum names written as words</td></tr>
+            <tr><td>7c1e52a0…8e91b3</td><td>"7c1e52a0-3f4d-…-2d0f5c8e91b3"</td><td>IDs shortened in the middle</td></tr>
+            <tr><td>7 users</td><td>users.length</td><td>The number of items in a list</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="wrap">
+      <div class="eyebrow">Where it works</div>
+      <h2>Built for the apps you actually debug</h2>
+      <div class="works">
+        <div>
+          <h3>Any framework</h3>
+          <ul>
+            <li>React, Vue and Angular, with component props when available</li>
+            <li>Svelte, plain JavaScript and server-rendered pages</li>
+            <li>D3 and charting libraries such as Chart.js, ECharts, Highcharts and Plotly</li>
+          </ul>
+        </div>
+        <div>
+          <h3>Any data source</h3>
+          <ul>
+            <li>fetch, XHR, WebSockets and server-sent events</li>
+            <li>JSON, GraphQL, XML, CSV, protobuf and MessagePack</li>
+            <li>Data in the page (Next.js, Nuxt, SvelteKit), localStorage and IndexedDB</li>
+          </ul>
+        </div>
+        <div>
+          <h3>Any layout</h3>
+          <ul>
+            <li>Iframes and micro-frontends, on the same site or others you enable</li>
+            <li>Shadow DOM and web components</li>
+            <li>Web workers, with DevTools open</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="privacy-band" id="privacy">
+    <div class="wrap">
+      <div>
+        <div class="eyebrow">Privacy</div>
+        <h2 style="margin-top:12px">Nothing leaves your browser</h2>
+      </div>
+      <ul>
+        <li><b>No servers, no accounts, no analytics.</b><span>Whence has no backend. It never sends what it sees anywhere.</span></li>
+        <li><b>Gone when you close the tab.</b><span>Captured requests live only in that tab's memory.</span></li>
+        <li><b>You choose where it runs.</b><span>Enable it per site, or on one tab at a time with no permission. <a href="privacy.html">Read the privacy policy</a>.</span></li>
+      </ul>
+    </div>
+  </section>
+</main>
+
+<footer class="site">
+  <div class="wrap">
+    <span>Whence · a free Chrome extension</span>
+    <nav aria-label="Footer">
+      <a href="privacy.html">Privacy policy</a>
+      <a href="https://chromewebstore.google.com/search/Whence">Chrome Web Store</a>
+    </nav>
+  </div>
+</footer>
+
+<script>
+(() => {
+  // Example data: what an online store's orders screen might fetch.
+  const orders = [
+    { customer: 'Nadia Benali', totalCents: 12950, status: 'processing', placedAt: '2026-10-29T14:48:00Z', placed: '12 min ago' },
+    { customer: 'Omar Farouk', totalCents: 4200, status: 'in_transit', placedAt: '2026-10-29T14:13:00Z', placed: '47 min ago' },
+    { customer: 'Lina Haddad', totalCents: 4200, status: 'in_transit', placedAt: '2026-10-29T13:02:00Z', placed: '2 h ago' },
+    { customer: 'Kim Reyes', totalCents: 8675, status: 'delivered', placedAt: '2026-10-29T12:01:00Z', placed: '3 h ago' },
+  ];
+  const money = (c) => `$${(c / 100).toFixed(2)}`;
+  const words = (s) => s.replace(/_/g, ' ').replace(/^./, (c) => c.toUpperCase());
+
+  // Each column: the field it shows and how Whence explains the match.
+  const columns = [
+    { field: 'customer', css: 'customer', show: (o) => o.customer, strength: 3, label: 'Exact value', why: () => 'unique value; the other values in the row agree' },
+    { field: 'totalCents', css: 'total', show: (o) => money(o.totalCents), strength: 3, label: 'Amount in cents', why: (o) => `${money(o.totalCents)} is ${o.totalCents} cents; confirmed by the rest of its column and the values around it`, cls: 'score' },
+    { field: 'status', css: 'status', show: (o) => words(o.status), strength: 3, label: 'Same value, as words', why: (o) => `"${o.status}" written as words; the values around it pick this row` },
+    { field: 'placedAt', css: 'placed', show: (o) => o.placed, strength: 2, label: 'Same time', why: (o) => `"${o.placed}" is about when ${o.placedAt} was` },
+  ];
+
+  const rows = document.getElementById('rows');
+  const trace = document.getElementById('trace');
+  const json = document.getElementById('json');
+  let current = null;
+
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+
+  // The response: the hovered item expanded (one field per line), the others collapsed.
+  const jsonValue = (v) => (typeof v === 'string' ? JSON.stringify(v) : String(v));
+  function renderJson(sel, field) {
+    const out = [];
+    const ln = (html, cls = '') => out.push(`<span class="ln${cls ? ` ${cls}` : ''}">${html}</span>`);
+    ln('{ <span class="k">"data"</span>: {');
+    ln('  <span class="k">"total"</span>: 1284,');
+    ln('  <span class="k">"orders"</span>: [');
+    orders.forEach((a, i) => {
+      const comma = i < orders.length - 1 ? ',' : '';
+      if (i !== sel) {
+        ln(`    { <span class="k">"customer"</span>: ${esc(JSON.stringify(a.customer))}, … }${comma}`);
+        return;
+      }
+      ln('    {', 'item');
+      columns.forEach((c, k) => {
+        const v = esc(jsonValue(a[c.field]));
+        const sep = k < columns.length - 1 ? ',' : '';
+        ln(`      <span class="k">"${c.field}"</span>: ${c.field === field ? `<span class="hit">${v}</span>` : v}${sep}`, 'item');
+      });
+      ln(`    }${comma}`, 'item');
+    });
+    ln('  ]');
+    ln('} }');
+    json.innerHTML = out.join('');
+  }
+
+  const pads = (n) => [1, 2, 3].map((k) => `<i class="${k <= n ? 'f' : ''}"></i>`).join('');
+
+  function show(i, c, cell) {
+    const a = orders[i];
+    const col = columns[c];
+    if (current) current.classList.remove('on');
+    current = cell;
+    cell.classList.add('on');
+    trace.innerHTML = `
+      <div class="el"><b>td</b> .${esc(col.css)}</div>
+      <div class="node">
+        <div class="row"><span class="method">GET</span><span class="path">/api/orders?page=1</span><span class="status">200</span></div>
+        <div class="meta">84 ms · just now</div>
+      </div>
+      <div class="node item">
+        <div class="row"><span class="key">data.orders[${i}]</span><span class="kind">list item</span></div>
+      </div>
+      <div class="node field">
+        <div class="row"><span class="key">${esc(col.field)}</span><span class="str">${pads(col.strength)}<b>${esc(col.label)}</b></span></div>
+        <div class="val">${esc(jsonValue(a[col.field]))}</div>
+        <div class="why">${esc(col.why(a))}</div>
+      </div>`;
+    renderJson(i, col.field);
+  }
+
+  orders.forEach((a, i) => {
+    const tr = document.createElement('tr');
+    columns.forEach((col, c) => {
+      const td = document.createElement('td');
+      const cell = document.createElement('span');
+      cell.className = `cell${col.cls ? ` ${col.cls}` : ''}`;
+      cell.tabIndex = 0;
+      cell.textContent = col.show(a);
+      cell.setAttribute('aria-label', `${col.show(a)}: show where it came from`);
+      const go = () => show(i, c, cell);
+      cell.addEventListener('mouseenter', go);
+      cell.addEventListener('focus', go);
+      td.append(cell);
+      tr.append(td);
+    });
+    rows.append(tr);
+  });
+
+  // Start on the case that's hard for other tools: $42.00 appears in two rows.
+  show(2, 1, rows.children[2].children[1].firstChild);
+})();
+</script>
+</body>
+</html>

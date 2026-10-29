@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Whence Privacy Policy</title>
+<meta name="description" content="Whence collects no personal data. Everything it captures stays in your browser tab and is discarded when you close it.">
+<link rel="icon" type="image/png" href="img/icon-32.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: a single reading column (about 68 characters) under the site header,
+   with a short summary box first and the full policy after it. */
+:root {
+  --bg: #f6f6f4;
+  --surface: #ffffff;
+  --sunk: #ecece9;
+  --ink: #1c1d1f;
+  --muted: #5f6267;
+  --line: #deded9;
+  --copper: #9a5a1a;
+  --copper-soft: #f3e3cf;
+  --on-copper: #fffaf2;
+  --display: "IBM Plex Sans Condensed", "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  --sans: "IBM Plex Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SF Mono", "Cascadia Code", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #111315; --surface: #17191c; --sunk: #1d2024; --ink: #ecebe7; --muted: #a2a3a6; --line: #2a2e33;
+    --copper: #e0a04f; --copper-soft: #3a2a17; --on-copper: #1b1206;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #111315; --surface: #17191c; --sunk: #1d2024; --ink: #ecebe7; --muted: #a2a3a6; --line: #2a2e33;
+  --copper: #e0a04f; --copper-soft: #3a2a17; --on-copper: #1b1206;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 400 1rem/1.65 var(--sans); -webkit-font-smoothing: antialiased; }
+a { color: var(--copper); text-underline-offset: 3px; }
+a:focus-visible { outline: 2px solid var(--copper); outline-offset: 2px; border-radius: 4px; }
+code { font-family: var(--mono); font-size: 0.9em; }
+h1, h2 { text-wrap: balance; }
+.wrap { max-width: 1120px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
+header.site { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: color-mix(in srgb, var(--bg) 92%, transparent); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); }
+header.site .wrap { display: flex; align-items: center; gap: 24px; padding-block: 12px; }
+.brand { display: flex; align-items: center; gap: 10px; color: var(--ink); text-decoration: none; font: 600 1.15rem/1 var(--display); letter-spacing: 0.01em; }
+.brand svg { width: 28px; height: 28px; flex: none; }
+header.site .back { margin-left: auto; font-size: 0.875rem; color: var(--muted); text-decoration: none; }
+header.site .back:hover { color: var(--ink); }
+
+article { max-width: 68ch; margin: 0 auto; padding-block: 56px 80px; display: grid; gap: 18px; }
+.eyebrow { font: 500 0.75rem/1 var(--sans); letter-spacing: 0.09em; text-transform: uppercase; color: var(--copper); }
+h1 { margin: 0; font: 600 clamp(2rem, 4.5vw, 2.75rem)/1.08 var(--display); letter-spacing: -0.01em; }
+.dates { color: var(--muted); font-size: 0.9rem; }
+.summary { margin: 12px 0 8px; padding: 20px 22px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; display: grid; gap: 10px; }
+.summary b { font-weight: 600; }
+.summary ul { margin: 0; padding-left: 1.1em; display: grid; gap: 6px; }
+h2 { margin: 30px 0 0; font: 600 1.375rem/1.25 var(--display); }
+p, ul { margin: 0; }
+ul { padding-left: 1.2em; display: grid; gap: 8px; }
+.perm { display: grid; grid-template-columns: minmax(8rem, max-content) minmax(0, 1fr); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--surface); }
+.perm > div { padding: 12px 16px; border-top: 1px solid var(--line); }
+.perm > div:nth-child(-n+2) { border-top: 0; }
+.perm > div:nth-child(odd) { font-family: var(--mono); font-size: 0.875rem; color: var(--copper); background: var(--sunk); }
+@media (max-width: 560px) { .perm { grid-template-columns: minmax(0, 1fr); } .perm > div:nth-child(2) { border-top: 1px solid var(--line); } .perm > div:nth-child(even) { border-top: 0; } }
+.placeholder { background: var(--copper-soft); border: 1px dashed var(--copper); border-radius: 4px; padding: 0 6px; font-family: var(--mono); font-size: 0.9em; }
+
+footer.site { border-top: 1px solid var(--line); }
+footer.site .wrap { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: center; padding-block: 28px; font-size: 0.8125rem; color: var(--muted); }
+footer.site nav { display: flex; gap: 20px; margin-left: auto; }
+footer.site a { color: var(--muted); }
+</style>
+</head>
+<body>
+
+<header class="site">
+  <div class="wrap">
+    <a class="brand" href="./" aria-label="Whence home">
+      <svg viewBox="0 0 128 128" aria-hidden="true"><rect x="4.5" y="4.5" width="119" height="119" rx="28" fill="#17191c" stroke="#2e3237" stroke-width="3"/><path d="M30 42 L46 92 L64 57 L82 92 L98 42" fill="none" stroke="#e0a04f" stroke-width="11.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="30" cy="36" r="12.5" fill="#17191c" stroke="#e0a04f" stroke-width="8.5"/><circle cx="98" cy="36" r="14.5" fill="#e0a04f"/></svg>
+      Whence
+    </a>
+    <a class="back" href="./">Back to the home page</a>
+  </div>
+</header>
+
+<main class="wrap">
+  <article>
+    <div class="eyebrow">Privacy policy</div>
+    <h1>Whence collects nothing about you</h1>
+    <p class="dates">Effective October 29, 2026 · Last updated October 29, 2026</p>
+
+    <div class="summary">
+      <b>In short</b>
+      <ul>
+        <li>Whence has no servers, no accounts and no analytics. It never sends anything it sees to the developer or to anyone else.</li>
+        <li>What it captures on a page stays in that browser tab's memory and is discarded when the tab is closed or reloaded.</li>
+        <li>The only things it saves are your two settings, kept in your browser.</li>
+        <li>Data leaves the extension only when you copy it or export a file yourself.</li>
+      </ul>
+    </div>
+
+    <p>This policy describes the Whence browser extension ("Whence", "the extension") for Chrome and other Chromium browsers. Whence is a developer tool: it shows which network request, list item and JSON field a value on a web page came from, and which requests a click made.</p>
+
+    <h2>What Whence reads, and only where you turn it on</h2>
+    <p>Whence runs only on sites you enable from its popup, or on a single tab when you start it there with "this tab only". On those pages, to do its job, it reads:</p>
+    <ul>
+      <li>the network requests the page makes and their responses: URLs, methods, status codes, headers and bodies (including WebSocket and server-sent event messages);</li>
+      <li>the page's content: the text and attributes of the element under your pointer, and data the page embeds in its HTML or keeps in its own localStorage, sessionStorage or IndexedDB;</li>
+      <li>that you clicked, submitted a form, pressed Enter, typed in a field, changed a selection or went back or forward, so it can tell which requests followed. It does not record what you type;</li>
+      <li>with DevTools open on the tab, the requests listed in DevTools' Network panel for that tab.</li>
+    </ul>
+    <p>This can include personal or sensitive information that the website itself shows you or exchanges with its servers, such as account details or authentication tokens. Whence processes it only inside your browser, only to show you where values came from, and never transmits it.</p>
+
+    <h2>What Whence stores</h2>
+    <ul>
+      <li><b>Captured requests and page data</b> are kept in memory in the tab where they were captured. They are not written to disk and are gone when you close or reload the tab, or leave the page.</li>
+      <li><b>Your settings</b> (whether secrets are redacted in copies and exports, and what a click does while inspecting) are saved with <code>chrome.storage.local</code> in your browser.</li>
+      <li><b>Requests read from DevTools</b> are held briefly in the extension's background memory (the last 300 per tab) to pass them to the page you're inspecting, and dropped when the tab closes.</li>
+      <li><b>Temporary tab state</b> (the list of frames on the current tab, and which request you opened in the side panel) is kept with <code>chrome.storage.session</code>, which the browser clears when it closes.</li>
+    </ul>
+
+    <h2>What leaves your browser</h2>
+    <p>Nothing, unless you do it:</p>
+    <ul>
+      <li><b>Copy and export.</b> When you copy a request (as text or cURL) or export JSON or a HAR file, it goes to your clipboard or a file you choose. Secrets such as authorization headers, cookies, tokens and password fields are replaced by default; you can turn this off in the settings.</li>
+      <li><b>"Load earlier data".</b> In "this tab only" mode, Whence can list requests the page made before it started. If you press "Load earlier data", the page requests those same URLs again from the same website, exactly as the page did. No other site is contacted.</li>
+    </ul>
+    <p>Whence makes no other network requests. Its fonts and icons are bundled with the extension.</p>
+
+    <h2>Sharing and selling</h2>
+    <p>Whence does not sell, rent, share or transfer any user data to anyone. The developer never receives any data from the extension.</p>
+
+    <h2>Limited use</h2>
+    <p>The use of information Whence handles complies with the Chrome Web Store User Data Policy, including its Limited Use requirements. Data is used only to provide Whence's single purpose, showing where values on a page came from and which requests an action made. It is not used for advertising, not used to determine creditworthiness or for lending, not transferred to third parties, and not read by any person.</p>
+
+    <h2>Permissions and why Whence needs them</h2>
+    <div class="perm">
+      <div>activeTab</div><div>Run Whence on the current tab when you start it there, without access to any other site.</div>
+      <div>scripting</div><div>Add Whence's scripts to the pages you enable, so it can see their requests and the element under your pointer.</div>
+      <div>Site access (optional)</div><div>Granted per site, only when you enable a site. Lets Whence start with the page, so it sees requests from the moment the page loads. You can remove it at any time from the popup or Chrome's extension settings.</div>
+      <div>storage</div><div>Save your settings and temporary tab state, as described above.</div>
+      <div>sidePanel</div><div>Show the request list and click timeline in Chrome's side panel.</div>
+    </div>
+
+    <h2>Children</h2>
+    <p>Whence is a tool for software developers and is not directed at children. It does not knowingly collect information from anyone, including children.</p>
+
+    <h2>This website</h2>
+    <p>This website sets no cookies and runs no analytics. It loads its fonts from Google Fonts, which receives your IP address as part of serving them.</p>
+
+    <h2>Changes to this policy</h2>
+    <p>If Whence ever changes how it handles data, this page will be updated before the change is released, and the date above will change. A change that would send data off your device would be announced in the extension's release notes and require your consent.</p>
+
+    <h2>Contact</h2>
+    <p>Questions about this policy or about Whence: <span class="placeholder">[add contact email]</span></p>
+  </article>
+</main>
+
+<footer class="site">
+  <div class="wrap">
+    <span>Whence · a free Chrome extension</span>
+    <nav aria-label="Footer">
+      <a href="./">Home</a>
+      <a href="https://chromewebstore.google.com/search/Whence">Chrome Web Store</a>
+    </nav>
+  </div>
+</footer>
+</body>
+</html>
